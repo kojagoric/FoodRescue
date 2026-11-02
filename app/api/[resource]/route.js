@@ -33,3 +33,39 @@ export async function POST(request, { params }) {
     return NextResponse.json({error:error.message},{status:error.status || 400});
   }
 }
+
+
+export async function DELETE(_request, { params }) {
+  try {
+    await requireStaff();
+
+    const { resource, id } = await params;
+    const config = resources[resource];
+
+    if (!config) {
+      return NextResponse.json(
+        { error: "Unknown resource." },
+        { status: 404 }
+      );
+    }
+
+    const [result] = await pool.execute(
+      `DELETE FROM \`${config.table}\` WHERE \`${config.id}\` = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json(
+        { error: "Record not found." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.status || 500 }
+    );
+  }
+}
